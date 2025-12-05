@@ -1,25 +1,39 @@
-API Gateway - Unificador de datos
+# API Gateway
 
-Este es el corazón de la arquitectura. API Gateway que centraliza y une todas las fuentes de datos.
+Centralized API Gateway for multiple microservices built with NestJS.
 
-Se encarga de:
+## Setup
 
-- Usuarios y Autenticación personalizada (JWT)
-- Lógica de negocio (pagos, reglas, emails, colas, etc.)
-- Proxy a Servicio de Blog (fmarcosdev.api.blog) para contenido
-- Exponer su propia API (/api/users, /api/orders, /articles, etc.)
-- Punto central para futuras integraciones
+```bash
+npm install
+cp .env.example .env  # Configure variables
+npm run dev
+```
 
-Endpoints disponibles:
+## Environment Variables
 
-- GET http://localhost:3001/articles (desde Strapi)
-- GET http://localhost:3001/ (health check)
+- `PORT` - Gateway port (default: 3001)
+- `CORS_ORIGIN` - Frontend URL
+- `CMS_URL` - Strapi CMS URL
 
+## Endpoints
 
-# pendiente
-. Autenticación en NestJS
-Implementa JWT y protege ciertas rutas si quieres que el frontend pase un token.
+**Swagger Docs**: http://localhost:3001/
 
-. Prepararte para deploy
-Puedes subir tanto el CMS como el backend a Railway u otra plataforma.
+- `GET /api/health` - Health check
+- `GET /api/articles` - Blog articles (from Strapi)
 
+## Architecture
+
+```
+Frontend → API Gateway → Microservices
+                ├── fmarcosdev.api.blog (Strapi)
+                └── [Future services]
+```
+
+## TODO
+
+- [ ] JWT Authentication
+- [ ] Rate limiting
+- [ ] Caching layer
+- [ ] Deploy config
