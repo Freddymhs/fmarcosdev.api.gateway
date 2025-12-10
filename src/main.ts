@@ -7,7 +7,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 function validateEnvVariables() {
-  const required = ['PORT', 'CORS_ORIGIN', 'CMS_URL'];
+  const required = ['CORS_ORIGIN', 'CMS_URL'];
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
@@ -19,6 +19,13 @@ function validateEnvVariables() {
 
 async function bootstrap() {
   validateEnvVariables();
+
+  const port = Number(process.env.PORT) || 3001;
+  const swaggerServerUrl =
+    process.env.SWAGGER_SERVER_URL ||
+    (process.env.RAILWAY_STATIC_URL
+      ? `https://${process.env.RAILWAY_STATIC_URL}`
+      : `http://localhost:${port}`);
 
   const app = await NestFactory.create(AppModule);
 
@@ -33,20 +40,18 @@ async function bootstrap() {
     .setTitle('API Gateway')
     .setDescription('Centralized API Gateway for multiple microservices')
     .setVersion('1.0')
-    .addServer(`http://localhost:${process.env.PORT}`, 'Local')
+    .addServer(swaggerServerUrl, 'API')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('/', app, document);
 
-  await app.listen(process.env.PORT!);
+  await app.listen(port, '0.0.0.0');
 
-  console.log(`🚀 API Gateway running on port ${process.env.PORT}`);
+  console.log(`🚀 API Gateway running on port ${port}`);
   console.log(`📡 CORS enabled for: ${process.env.CORS_ORIGIN}`);
   console.log(`📚 CMS URL: ${process.env.CMS_URL}`);
-  console.log(
-    `📖 Swagger docs available at: http://localhost:${process.env.PORT}/`,
-  );
+  console.log(`📖 Swagger docs available at: ${swaggerServerUrl}/`);
 }
 
 void bootstrap();
