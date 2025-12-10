@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import type { AxiosError } from 'axios';
 
 type Article = {
   id: number;
@@ -26,18 +27,38 @@ export class CmsService {
     }
 
     // 🚀 PRODUCTION: Consulta real a Strapi
-    const cmsUrl = process.env.CMS_URL;
+    const rawCmsUrl = process.env.CMS_URL;
+    const cmsUrl = rawCmsUrl?.startsWith('http')
+      ? rawCmsUrl
+      : `https://${rawCmsUrl}`;
     const params = new URLSearchParams({
       'pagination[page]': page.toString(),
       'pagination[pageSize]': pageSize.toString(),
       'sort[0]': 'publishedAt:desc',
     });
 
-    const { data } = await firstValueFrom(
-      this.http.get<{ data: Article[] }>(`${cmsUrl}/api/articles?${params}`),
-    );
+    try {
+      const url = new URL(`/api/articles?${params}`, cmsUrl);
+      const { data } = await firstValueFrom(
+        this.http.get<{ data: Article[] }>(url.toString()),
+      );
 
-    return data.data;
+      return data.data;
+    } catch (error) {
+      const axiosErr = error as AxiosError;
+      const status = axiosErr.response?.status;
+
+      console.error('❌ CMS fetch failed', {
+        cmsUrl,
+        status,
+        message: axiosErr.message,
+      });
+
+      throw new HttpException(
+        status ? `CMS error ${status}` : 'CMS unavailable',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
   }
 
   // 🧪 Genera artículos mock para testing (orden descendente: más nuevo primero)
